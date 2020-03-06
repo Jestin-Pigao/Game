@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Game!</title>
+
+	<style type="text/css">
+		h1 {
+			text-align: center;
+		}
+
+		canvas {
+			border: 2px solid black;
+			display: block;
+			margin: auto;
+		}
+	</style>
+</head>
+<body>
+	<h1>Live Action Game</h1>
+	<canvas width="600px" height="400px"></canvas>
+
+	<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/CaryACTvF/toolbox@c6b8005/aptools.js"></script>
+
+	<script type="text/javascript">
+		const canvas = document.querySelector("canvas");
+		const ctx = canvas.getContext("2d");
+		const width = canvas.width;
+		const height = canvas.height;
+		const collisionDistance = 40;
+
+		let score = 0;
+		let playing = true;
+
+		function updateScore(score) {
+			ctx.font = "20px Arial";
+			let scoreText = "Score: " + score;
+			ctx.fillText(scoreText, 10, 30);
+		}
+
+		function generateRandom(minNumber,maxNumber) {
+			//
+			let randomDecimal = Math.random();
+			let range = maxNumber - minNumber;
+			let scaleUp = Math.round(randomDecimal*range);
+			let finalNumber = minNumber + scaleUp;
+
+			return finalNumber;
+		}
+
+		function getDistance(sprite1,sprite2) {
+			let x1 = sprite1.x;
+			let x2 = sprite2.x;
+			let y1 = sprite1.y;
+			let y2 = sprite2.y;
+
+			let distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+			return distance;
+		}
+
+		// Load images into the game
+		let backgroundImage = new Image();
+		backgroundImage.src = "Thebackgroundofedgaroffice.jpg";
+
+		let playerImage = new Image();
+		playerImage.src = "Cary.png";
+
+		let foodImage = new Image();
+		foodImage.src = "foodImage.jpg";
+
+		let enemyImage = new Image();
+		enemyImage.src = "monster.png";
+
+		// Load audio
+		let goodSound = new Audio();
+		goodSound.src = "good.wav";
+
+		let badSound =  new Audio();
+		badSound.src = "bad.wav";
+
+		//
+		let sprites = [];
+		let foods = [];
+		let monsters = [];
+
+		class Player {
+			constructor(x,y) {
+				this.x = x;
+				this.y = y;
+				this.image = playerImage;
+				this.speed = 2;
+				this.direction = "left";
+				append(sprites, this);
+			}
+
+			draw() {
+				ctx.drawImage(this.image, this.x, this.y)
+			}
+
+			update() {
+				//
+				if (this.direction == "right") {
+					this.x = this.x + this.speed;
+				}
+
+				else if (this.direction == "left") {
+					this.x = this.x - this.speed;
+				}
+
+				else if (this.direction == "up") {
+					this.y = this.y - this.speed;
+				}
+
+				else if (this.direction == "down") {
+					this.y = this.y + this.speed;
+				}
+
+				//
+				if (this.x > width) {
+					this.x = 0;
+				}
+
+				else if (this.x < 0) {
+					this.x = width;
+				}
+
+				else if (this.y > height) {
+					this.y = 0;
+				}
+
+				else if (this.y < 0) {
+					this.y = height;
+				}
+			}
+		}
+
+
+
+		let player = new Player(300,200);
+
+		class Food {
+			constructor() {
+				this.x = generateRandom(0, width);
+				this.y = generateRandom(0, height);
+				this.image = foodImage;
+				append(sprites, this);
+				append(foods, this);
+			}
+
+			draw() {
+				ctx.drawImage(this.image, this.x, this.y)
+			}
+
+			update() {
+				let distance = getDistance(player, this);
+
+				if (distance < collisionDistance) {
+					this.x = generateRandom(0, width);
+					this.y = generateRandom(0, height);
+					score = score + 100;
+					let monster = new Monster();
+					goodSound.currentTime = 0;
+					goodSound.play();
+				}
+			}
+		}
+
+		class Monster {
+			constructor() {
+				this.x = generateRandom(0, width);
+				this.y = generateRandom(0, height);
+				this.speed = generateRandom(1, 5);
+				let directionNumber = generateRandom(1,4);
+
+				if (directionNumber == 1) {
+					this.direction = "left";
+				}
+
+				else if (directionNumber == 2) {
+					this.direction = "right";
+				}
+
+				else if (directionNumber == 3) {
+					this.direction = "up";
+				}
+
+				else if (directionNumber == 4) {
+					this.direction = "down";
+				}
+
+				this.image = enemyImage;
+				append(sprites, this);
+				append(monsters, this);
+			}
+
+			draw() {
+				ctx.drawImage(this.image, this.x, this.y);
+			}
+
+			update() {
+				//
+				if (this.direction == "right") {
+					this.x = this.x + this.speed;
+				}
+
+				else if (this.direction == "left") {
+					this.x = this.x - this.speed;
+				}
+
+				else if (this.direction == "up") {
+					this.y = this.y - this.speed;
+				}
+
+				else if (this.direction == "down") {
+					this.y = this.y + this.speed;
+				}
+
+				//
+				if (this.x > width) {
+					this.x = 0;
+				}
+
+				else if (this.x < 0) {
+					this.x = width;
+				}
+
+				else if (this.y > height) {
+					this.y = 0;
+				}
+
+				else if (this.y < 0) {
+					this.y = height;
+				}
+
+				//
+				let distance = getDistance(player, this);
+
+				if (distance < collisionDistance) {
+					goodSound.pause();
+					badSound.currentTime = 0;
+					badSound.play();
+					playing = false;
+				}
+			}
+		}
+
+		window.addEventListener("load", function() {
+			function drawBackground() {
+				ctx.drawImage(backgroundImage, 0, 0, width, height);
+			}
+
+			drawBackground();
+
+			let food1 = new Food();
+			let food2 = new Food();
+			let monster1 = new Monster();
+			let monster2 = new Monster();
+			
+			window.addEventListener("keydown", function(event) {
+				console.log(event["key"]);
+				
+				if (event["key"] == "ArrowRight") {
+					player.direction = "right";
+				}
+
+				if (event["key"] == "ArrowLeft") {
+					player.direction = "left";
+				}
+
+				if (event["key"] == "ArrowDown") {
+					player.direction = "down";
+				}
+
+				if (event["key"]  == "ArrowUp") {
+					player.direction = "up";
+				}
+			})
+
+			function gameloop() {
+				// update all sprites
+				player.update();
+				sprites.forEach((sprite) => {
+					sprite.update();
+				});
+
+				// draw all the sprites
+				drawBackground();
+				sprites.forEach((sprite) => {
+					sprite.draw();
+				});
+				updateScore(score);
+
+				// recall the gameloop so that it loops
+				if (playing == true) {
+					requestAnimationFrame(gameloop);
+				}
+			}
+
+			gameloop();
+		})
+	</script>
+</body>
+</html>
